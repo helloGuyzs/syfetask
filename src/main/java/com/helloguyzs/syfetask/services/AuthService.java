@@ -1,6 +1,7 @@
 package com.helloguyzs.syfetask.services;
 
 import com.helloguyzs.syfetask.dto.auth.LoginRequest;
+import com.helloguyzs.syfetask.dto.auth.LoginResponse;
 import com.helloguyzs.syfetask.dto.auth.RegisterRequest;
 import com.helloguyzs.syfetask.models.Users;
 import com.helloguyzs.syfetask.repo.UserRepo;
@@ -12,6 +13,10 @@ import java.util.Optional;
 
 @Service
 public class AuthService {
+
+
+    @Autowired
+    CategoryService categoryService;
 
     @Autowired
     UserRepo repo;
@@ -30,6 +35,8 @@ public class AuthService {
         user.setPhone(registerDto.getPhoneNumber());
 
         repo.save(user);
+
+        categoryService.createDefaultCatogaries(1);
         return "USer registered successfully";
     }
 
@@ -46,7 +53,7 @@ public class AuthService {
 
             if (user.getPassword().equals(password)){
 
-                return "Login Successfully";
+                 "Login Successfully";
             }else {
 
                 return "Invalid Password";

@@ -14,7 +14,7 @@ public class CreateTransactionResponse {
 
     private Integer id;
     private Integer user_id;
-    private Integer amount ;
+    private Double  amount ;
     private String date;
     private String category;
     private String description;

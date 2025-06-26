@@ -3,12 +3,15 @@ package com.helloguyzs.syfetask.controller;
 
 import com.helloguyzs.syfetask.dto.transaction.CreateTransactionRequest;
 import com.helloguyzs.syfetask.dto.transaction.UpdateTransactionRequest;
+import com.helloguyzs.syfetask.enums.CategoryType;
 import com.helloguyzs.syfetask.models.Transaction;
 import com.helloguyzs.syfetask.services.TransactionService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -18,9 +21,14 @@ public class TransactionController {
     TransactionService transactionService;
 
     @GetMapping("/transactions")
-    public List<Transaction> getAllTransactions(){
+    public List<Transaction> getTransactions(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) CategoryType type
+    ) {
 
-        return transactionService.getAllTransaction();
+        return transactionService.getAllTransaction(startDate, endDate, category, type);
     }
 
 
@@ -38,8 +46,8 @@ public class TransactionController {
     }
 
     @DeleteMapping("/transactions/{id}")
-    public String deleteTransaction(){
+    public String deleteTransaction(@PathVariable Integer id){
 
-        return transactionService.deleteTransaction() ;
+        return transactionService.deleteTransaction(id) ;
     }
 }
