@@ -21,7 +21,7 @@ public class CreateTransactionRequest {
     private String category;
 
     @NotNull(message = "Date is required")
-    @PastOrPresent(message = "Date cannot be in the future")
+//    @PastOrPresent(message = "Date cannot be in the future")
     private LocalDate date ;
     private String description;
 

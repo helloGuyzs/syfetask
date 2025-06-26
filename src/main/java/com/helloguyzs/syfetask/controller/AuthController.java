@@ -2,6 +2,7 @@ package com.helloguyzs.syfetask.controller;
 
 
 import com.helloguyzs.syfetask.dto.auth.LoginRequest;
+import com.helloguyzs.syfetask.dto.auth.LoginResponse;
 import com.helloguyzs.syfetask.dto.auth.RegisterRequest;
 import com.helloguyzs.syfetask.models.Users;
 import com.helloguyzs.syfetask.services.AuthService;
@@ -30,7 +31,7 @@ public class AuthController {
 
 
     @RequestMapping("/auth/login")
-    public String Login( @RequestBody @Valid LoginRequest request) {
+    public String Login(@RequestBody @Valid LoginRequest request) {
         return authService.login(request);
     }
 

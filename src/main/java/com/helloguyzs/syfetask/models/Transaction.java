@@ -32,7 +32,7 @@ public class Transaction {
     private Double  amount;
 
     @Column( nullable = false)
-    @PastOrPresent(message = "Date cannot be in the future")
+//    @PastOrPresent(message = "Date cannot be in the future")
     private LocalDate date;
 
     @Column( nullable = false)

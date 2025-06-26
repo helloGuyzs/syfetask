@@ -1,6 +1,7 @@
 package com.helloguyzs.syfetask.services;
 
 import com.helloguyzs.syfetask.dto.auth.LoginRequest;
+import com.helloguyzs.syfetask.dto.auth.LoginResponse;
 import com.helloguyzs.syfetask.dto.auth.RegisterRequest;
 import com.helloguyzs.syfetask.models.Users;
 import com.helloguyzs.syfetask.repo.UserRepo;
@@ -52,7 +53,7 @@ public class AuthService {
 
             if (user.getPassword().equals(password)){
 
-                return "Login Successfully";
+                 "Login Successfully";
             }else {
 
                 return "Invalid Password";
