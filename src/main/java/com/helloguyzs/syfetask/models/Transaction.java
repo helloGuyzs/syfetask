@@ -20,7 +20,7 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-//    @Column( nullable = false)
+    @Column( nullable = false)
     private Integer userId;
 
     @Column( nullable = false)
