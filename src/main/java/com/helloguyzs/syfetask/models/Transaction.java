@@ -2,7 +2,9 @@ package com.helloguyzs.syfetask.models;
 
 import com.helloguyzs.syfetask.enums.CategoryType;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.PastOrPresent;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,9 +29,10 @@ public class Transaction {
 
     @Column(nullable = false)
     @Min(1)
-    private Integer amount;
+    private Double  amount;
 
     @Column( nullable = false)
+    @PastOrPresent(message = "Date cannot be in the future")
     private LocalDate date;
 
     @Column( nullable = false)

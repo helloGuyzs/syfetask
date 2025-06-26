@@ -15,7 +15,7 @@ public class CreateTransactionRequest {
 
 
     @Min(value = 1 , message = "Amount should be more than Zero")
-    private Integer amount;
+    private Double  amount;
 
     @NotBlank(message = "Category is required")
     private String category;
