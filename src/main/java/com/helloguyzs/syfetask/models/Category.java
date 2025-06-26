@@ -20,7 +20,7 @@ public class Category {
     @Column(nullable = false)
     private Integer userId;
 
-    @Column(unique = true, nullable = false)
+    @Column( nullable = false)
     private String name;
 
     @Enumerated(EnumType.STRING)
@@ -28,6 +28,7 @@ public class Category {
 
     @Column(nullable = false)
     private boolean isCustom;
+
 
 
 }

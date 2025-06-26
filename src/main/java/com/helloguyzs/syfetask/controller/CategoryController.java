@@ -21,7 +21,7 @@ public class CategoryController {
     public List<GetCategoriesResponse> getALlCategories() {
 
 
-        return categoryService.getAllCategories();
+        return categoryService.getAllCategories(1);
     }
 
 
@@ -29,16 +29,14 @@ public class CategoryController {
     public String addCategory(@RequestBody @Valid NewCategoryRequest request) {
 
         System.out.println("Adding category: " + request.getName());
-        categoryService.addCategory(request);
-
-        return "Category added successfully";
+        return categoryService.addCategory(request);
     }
 
     @DeleteMapping("categories/{name}")
     public String deleteCategory(@PathVariable String name) {
 
-        categoryService.deleteCategory(name);
-        return "Category deleted successfully";
+        System.out.println(name);
+        return categoryService.deleteCategory(name);
     }
 
 }

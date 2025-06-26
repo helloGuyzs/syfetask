@@ -13,6 +13,10 @@ import java.util.Optional;
 @Service
 public class AuthService {
 
+
+    @Autowired
+    CategoryService categoryService;
+
     @Autowired
     UserRepo repo;
 
@@ -30,6 +34,8 @@ public class AuthService {
         user.setPhone(registerDto.getPhoneNumber());
 
         repo.save(user);
+
+        categoryService.createDefaultCatogaries(1);
         return "USer registered successfully";
     }
 

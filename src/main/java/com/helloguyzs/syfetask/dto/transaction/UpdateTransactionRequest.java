@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UpdateTransactionRequest {
 
+
     private Integer amount;
     private String category;
     private String description;
