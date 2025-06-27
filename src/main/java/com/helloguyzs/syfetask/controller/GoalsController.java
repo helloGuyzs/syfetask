@@ -1,13 +1,13 @@
 package com.helloguyzs.syfetask.controller;
 
-
 import com.helloguyzs.syfetask.dto.goals.*;
 import com.helloguyzs.syfetask.services.GoalsService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import static com.helloguyzs.syfetask.utils.SessionUtil.getCurrentUserId;
 
 @RestController
 @RequestMapping("/api")
@@ -17,38 +17,32 @@ public class GoalsController {
     GoalsService goalsService;
 
     @PostMapping("/goals")
-    public CreateGoalResponse createGoal(@RequestBody @Valid CreateGoalRequest request) {
-
-        Integer userId = 1;
+    public CreateGoalResponse createGoal(@RequestBody @Valid CreateGoalRequest request, HttpServletRequest req) {
+        Integer userId = getCurrentUserId(req);
         return goalsService.createGoal(userId, request);
     }
 
     @GetMapping("/goals")
-    public GoalByUserIdResponse getGoalsByUserId() {
-
-        Integer userId = 1;
+    public GoalByUserIdResponse getGoalsByUserId(HttpServletRequest req) {
+        Integer userId = getCurrentUserId(req);
         return goalsService.getGoalsByUserId(userId);
     }
 
-
     @GetMapping("/goals/{id}")
-    public CreateGoalResponse getGoalById(@PathVariable Integer id) {
-        Integer userId = 1;
-        return goalsService.getGoalById( userId , id);
+    public CreateGoalResponse getGoalById(@PathVariable Integer id, HttpServletRequest req) {
+        Integer userId = getCurrentUserId(req);
+        return goalsService.getGoalById(userId, id);
     }
 
     @PutMapping("/goals/{id}")
-    public CreateGoalResponse updateGoal(@PathVariable Integer id, @RequestBody @Valid UpdateGoalRequest request) {
-        Integer userId = 1;
-        return goalsService.updateGoal( userId, id, request);
+    public CreateGoalResponse updateGoal(@PathVariable Integer id, @RequestBody @Valid UpdateGoalRequest request, HttpServletRequest req) {
+        Integer userId = getCurrentUserId(req);
+        return goalsService.updateGoal(userId, id, request);
     }
 
     @DeleteMapping("/goals/{id}")
-    public DeleteGoalResponse deleteGoal(@PathVariable Integer id) {
-        Integer userId = 1;
+    public DeleteGoalResponse deleteGoal(@PathVariable Integer id, HttpServletRequest req) {
+        Integer userId = getCurrentUserId(req);
         return goalsService.deleteGoal(userId, id);
     }
-
-
 }
-

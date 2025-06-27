@@ -1,17 +1,21 @@
-  package com.helloguyzs.syfetask.exceptions;
+package com.helloguyzs.syfetask.exceptions;
 
 import com.helloguyzs.syfetask.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.util.*;
 
 @RestControllerAdvice
 @Slf4j
@@ -42,28 +46,8 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex, HttpStatus.CONFLICT, request);
     }
 
-    // Fallback for all other exceptions
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleAll(Exception ex, HttpServletRequest request) {
-        return buildErrorResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR, request);
-    }
-
-    private ResponseEntity<ErrorResponse> buildErrorResponse(Exception ex, HttpStatus status, HttpServletRequest request) {
-        ErrorResponse error = new ErrorResponse(
-            LocalDateTime.now(),
-            status.value(),
-            status.getReasonPhrase(),
-            ex.getMessage(),
-            request.getRequestURI()
-        );
-        log.error("Exception: ", ex);
-        return new ResponseEntity<>(error, status);
-    }
-
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    private ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        // Extract first field error for a simple message
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
         FieldError fieldError = ex.getBindingResult().getFieldErrors().stream().findFirst().orElse(null);
         String message = fieldError != null
                 ? fieldError.getField() + ": " + fieldError.getDefaultMessage()
@@ -77,6 +61,20 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
 
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleJsonParseError(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        String message = ex.getMostSpecificCause().getMessage();
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                message,
+                request.getRequestURI()
+        );
 
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
@@ -86,4 +84,44 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request);
     }
 
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParams(MissingServletRequestParameterException ex, HttpServletRequest request) {
+        String message = "Missing parameter: " + ex.getParameterName();
+        return buildErrorResponse(new BadRequestException(message), HttpStatus.BAD_REQUEST, request);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        String message = "Invalid value for '" + ex.getName() + "': " + ex.getValue();
+        return buildErrorResponse(new BadRequestException(message), HttpStatus.BAD_REQUEST, request);
+    }
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoHandlerFound(NoHandlerFoundException ex, HttpServletRequest request) {
+        String message = "No handler found for " + ex.getHttpMethod() + " " + ex.getRequestURL();
+        return buildErrorResponse(new NotFoundException(message), HttpStatus.NOT_FOUND, request);
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
+        String message = ex.getMethod() + " method not supported for this endpoint.";
+        return buildErrorResponse(new BadRequestException(message), HttpStatus.METHOD_NOT_ALLOWED, request);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleAll(Exception ex, HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR, request);
+    }
+
+    private ResponseEntity<ErrorResponse> buildErrorResponse(Exception ex, HttpStatus status, HttpServletRequest request) {
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return new ResponseEntity<>(error, status);
+    }
 }

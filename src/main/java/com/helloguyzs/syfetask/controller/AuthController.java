@@ -7,6 +7,7 @@ import com.helloguyzs.syfetask.dto.auth.RegisterRequest;
 import com.helloguyzs.syfetask.dto.auth.RegisterResponse;
 import com.helloguyzs.syfetask.models.Users;
 import com.helloguyzs.syfetask.services.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -19,28 +20,36 @@ import java.util.List;
 public class AuthController {
 
     @Autowired
-    AuthService authService;
+    private AuthService authService;
 
     @PostMapping("/register")
-    public RegisterResponse Register(@RequestBody @Valid RegisterRequest request){
+    public RegisterResponse register(@RequestBody @Valid RegisterRequest request) {
         return authService.register(request);
     }
 
-
-//    @GetMapping("/users")
-//    public List<Users> getUser(){
-//        return authService.getUser();
-//    }
-
-
-    @RequestMapping("/login")
-    public LoginResponse Login(@RequestBody @Valid LoginRequest request) {
-        return authService.login(request);
+    @PostMapping("/login")
+    public LoginResponse login(@RequestBody @Valid LoginRequest request, HttpServletRequest req) {
+        return authService.login(request, req);
     }
 
+    @PostMapping("/logout")
+    public String logout(HttpServletRequest req) {
+        return authService.logout(req);
+    }
 
-    @RequestMapping("/logout")
-    public String Logout() {
-        return "Thank you for coming to helloguyzs";
+    @GetMapping("/me")
+    public Users getCurrentUser(HttpServletRequest req) {
+        return authService.getCurrentUser(req);
+    }
+
+    @GetMapping("/public")
+    public String publicEndpoint() {
+        return "This is a public endpoint.";
+    }
+
+    @GetMapping("/private")
+    public String privateEndpoint(HttpServletRequest req) {
+        Users user = authService.getCurrentUser(req);
+        return "Welcome " + user.getId() + ", this is a private endpoint.";
     }
 }
