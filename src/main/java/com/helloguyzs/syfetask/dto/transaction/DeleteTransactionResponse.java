@@ -1,13 +1,14 @@
-package com.helloguyzs.syfetask.dto.auth;
+package com.helloguyzs.syfetask.dto.transaction;
+
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-public class LoginResponse {
+public class DeleteTransactionResponse {
 
-    private String message;
+    private  String message;
 }

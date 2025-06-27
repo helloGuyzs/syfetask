@@ -1,13 +1,15 @@
-package com.helloguyzs.syfetask.dto.auth;
+package com.helloguyzs.syfetask.dto.category;
+
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
-@NoArgsConstructor
 @Data
-public class LoginResponse {
+@NoArgsConstructor
+public class DeleteCategoryResponse {
 
     private String message;
+
 }

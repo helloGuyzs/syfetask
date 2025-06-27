@@ -1,13 +1,13 @@
-package com.helloguyzs.syfetask.dto.auth;
+package com.helloguyzs.syfetask.dto.goals;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-public class LoginResponse {
+public class DeleteGoalResponse {
 
     private String message;
 }

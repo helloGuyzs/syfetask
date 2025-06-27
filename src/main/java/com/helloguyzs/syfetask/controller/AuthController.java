@@ -2,41 +2,54 @@ package com.helloguyzs.syfetask.controller;
 
 
 import com.helloguyzs.syfetask.dto.auth.LoginRequest;
+import com.helloguyzs.syfetask.dto.auth.LoginResponse;
 import com.helloguyzs.syfetask.dto.auth.RegisterRequest;
+import com.helloguyzs.syfetask.dto.auth.RegisterResponse;
 import com.helloguyzs.syfetask.models.Users;
 import com.helloguyzs.syfetask.services.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+
 @RestController
+@RequestMapping("/api/auth")
 public class AuthController {
 
     @Autowired
-    AuthService authService;
+    private AuthService authService;
 
-    @PostMapping("/auth/register")
-    public String Register( @RequestBody @Valid RegisterRequest request){
+    @PostMapping("/register")
+    public RegisterResponse register(@RequestBody @Valid RegisterRequest request) {
         return authService.register(request);
     }
 
-
-//    @GetMapping("/users")
-//    public List<Users> getUser(){
-//        return authService.getUser();
-//    }
-
-
-    @RequestMapping("/auth/login")
-    public String Login( @RequestBody @Valid LoginRequest request) {
-        return authService.login(request);
+    @PostMapping("/login")
+    public LoginResponse login(@RequestBody @Valid LoginRequest request, HttpServletRequest req) {
+        return authService.login(request, req);
     }
 
+    @PostMapping("/logout")
+    public String logout(HttpServletRequest req) {
+        return authService.logout(req);
+    }
 
-    @RequestMapping("/logout")
-    public String Logout() {
-        return "Thank you for coming to helloguyzs";
+    @GetMapping("/me")
+    public Users getCurrentUser(HttpServletRequest req) {
+        return authService.getCurrentUser(req);
+    }
+
+    @GetMapping("/public")
+    public String publicEndpoint() {
+        return "This is a public endpoint.";
+    }
+
+    @GetMapping("/private")
+    public String privateEndpoint(HttpServletRequest req) {
+        Users user = authService.getCurrentUser(req);
+        return "Welcome " + user.getId() + ", this is a private endpoint.";
     }
 }
