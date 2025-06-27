@@ -6,6 +6,7 @@ import com.helloguyzs.syfetask.dto.report.YearlyReport;
 import com.helloguyzs.syfetask.enums.CategoryType;
 import com.helloguyzs.syfetask.models.Transaction;
 import com.helloguyzs.syfetask.repo.TransactionRepo;
+import com.helloguyzs.syfetask.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,9 @@ public class ReportService {
     @Autowired
     TransactionRepo repo;
 
+    @Autowired
+    SecurityUtils securityUtils;
+
     private Map< String , Double> totalIncome( List<Transaction> transactions, String type ){
 
         Map<String , Double> response= new HashMap<>();
@@ -32,18 +36,14 @@ public class ReportService {
             }
         }
 
-
         return response;
-
-
-
     }
 
     public MonthlyReport generateMonthlyReport(int year, int month) {
         // Logic to generate monthly report
         // This is a placeholder implementation
 
-        Integer userId = 1;
+        Integer userId = securityUtils.getCurrentUserId();
 
         LocalDate startDate = LocalDate.of(year, month, 1);
         LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
@@ -77,7 +77,7 @@ public class ReportService {
 
 
     public YearlyReport generateYearlyReport(int year) {
-        Integer userId = 1;
+        Integer userId = securityUtils.getCurrentUserId();
 
         LocalDate startDate = LocalDate.of(year, 1, 1);
         LocalDate endDate = LocalDate.of(year, 12, 31);

@@ -10,6 +10,7 @@ import com.helloguyzs.syfetask.models.Goal;
 import com.helloguyzs.syfetask.models.Transaction;
 import com.helloguyzs.syfetask.repo.GoalsRepo;
 import com.helloguyzs.syfetask.repo.TransactionRepo;
+import com.helloguyzs.syfetask.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,8 @@ import java.util.Optional;
 public class GoalsService {
 
 
+    @Autowired
+    SecurityUtils securityUtils;
 
     @Autowired
     GoalsRepo repo;
@@ -31,7 +34,7 @@ public class GoalsService {
 
     private Double getTotalIncome(Goal goal , String type){
 
-         Integer userId = 1;
+
         List<Transaction> transactions = transactionRepo.findByUserIdAndDateBetween(
                 goal.getUserId(),
                 goal.getStartDate(),
@@ -81,7 +84,7 @@ public class GoalsService {
 
     public CreateGoalResponse createGoal(CreateGoalRequest requestDTO) {
 
-        Integer userId = 1;
+        Integer userId = securityUtils.getCurrentUserId();
         Goal goal = new Goal();
 
 
@@ -117,7 +120,7 @@ public class GoalsService {
 
 
     public List<CreateGoalResponse> getGoalsByUserId() {
-        Integer userId = 1;
+        Integer userId = securityUtils.getCurrentUserId();
 
 
         List<Goal> goal = repo.findByUserId(userId);

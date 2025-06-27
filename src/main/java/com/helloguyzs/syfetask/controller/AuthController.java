@@ -1,43 +1,43 @@
 package com.helloguyzs.syfetask.controller;
 
-
 import com.helloguyzs.syfetask.dto.auth.LoginRequest;
-import com.helloguyzs.syfetask.dto.auth.LoginResponse;
 import com.helloguyzs.syfetask.dto.auth.RegisterRequest;
-import com.helloguyzs.syfetask.models.Users;
 import com.helloguyzs.syfetask.services.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.security.core.Authentication;
 
 @RestController
+@RequestMapping("/api/auth")
 public class AuthController {
 
-    @Autowired
-    AuthService authService;
+    private final AuthService authService;
 
-    @PostMapping("/auth/register")
-    public String Register( @RequestBody @Valid RegisterRequest request){
+    @Autowired
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    @PostMapping("/register")
+    public String register(@RequestBody @Valid RegisterRequest request) {
         return authService.register(request);
     }
 
-
-//    @GetMapping("/users")
-//    public List<Users> getUser(){
-//        return authService.getUser();
-//    }
-
-
-    @RequestMapping("/auth/login")
-    public String Login(@RequestBody @Valid LoginRequest request) {
-        return authService.login(request);
+    @PostMapping("/login")
+    public String login(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {
+        return authService.login(loginRequest , request);
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout() {
+        return ResponseEntity.ok("You have been logged out successfully.");
+    }
 
-    @RequestMapping("/logout")
-    public String Logout() {
-        return "Thank you for coming to helloguyzs";
+    @GetMapping("/me")
+    public ResponseEntity<?> whoami(Authentication authentication) {
+        return ResponseEntity.ok(authentication);
     }
 }

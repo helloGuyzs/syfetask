@@ -8,6 +8,7 @@ import com.helloguyzs.syfetask.models.Category;
 import com.helloguyzs.syfetask.models.Transaction;
 import com.helloguyzs.syfetask.repo.CategoryRepo;
 import com.helloguyzs.syfetask.repo.TransactionRepo;
+import com.helloguyzs.syfetask.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +26,9 @@ public class TransactionService {
     @Autowired
     TransactionRepo repo;
 
+    @Autowired
+    SecurityUtils securityUtils;
+
 
     public List<Transaction> getAllTransaction(
             LocalDate startDate,
@@ -34,7 +38,7 @@ public class TransactionService {
 
     ) {
 
-        int userId = 1;
+        Integer userId = securityUtils.getCurrentUserId();
 
         List<Transaction> transactions = repo.findByUserId(userId);
 
@@ -51,7 +55,7 @@ public class TransactionService {
 
         // need to make the check of category
 
-        int userId = 1;
+        Integer userId = securityUtils.getCurrentUserId();
 
         List<Category> categories = categoryRepo.findByUserId(userId);
 
@@ -84,7 +88,7 @@ public class TransactionService {
 
     public String updateTransaction(int updateTransactoinID, UpdateTransactionRequest updateTransactionDTO) {
 
-        int userId = 1;
+        Integer userId = securityUtils.getCurrentUserId();
 
         Optional<Transaction> optTran = repo.findById(updateTransactoinID);
 
