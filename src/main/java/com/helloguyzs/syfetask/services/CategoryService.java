@@ -1,9 +1,13 @@
 package com.helloguyzs.syfetask.services;
 
-
+import com.helloguyzs.syfetask.dto.category.DeleteCategoryResponse;
 import com.helloguyzs.syfetask.dto.category.GetCategoriesResponse;
 import com.helloguyzs.syfetask.dto.category.NewCategoryRequest;
+import com.helloguyzs.syfetask.dto.category.NewCategoryResponse;
 import com.helloguyzs.syfetask.enums.CategoryType;
+import com.helloguyzs.syfetask.exceptions.ConflictException;
+import com.helloguyzs.syfetask.exceptions.ForbiddenException;
+import com.helloguyzs.syfetask.exceptions.NotFoundException;
 import com.helloguyzs.syfetask.models.Category;
 import com.helloguyzs.syfetask.models.Transaction;
 import com.helloguyzs.syfetask.repo.CategoryRepo;
@@ -17,16 +21,13 @@ import java.util.Optional;
 @Service
 public class CategoryService {
 
+    @Autowired
+    private TransactionRepo transactionRepo;
 
     @Autowired
-    TransactionRepo transactionRepo;
+    private CategoryRepo repo;
 
-    @Autowired
-    CategoryRepo repo;
-
-
-    public  void createDefaultCatogaries( Integer userId) {
-
+    public void createDefaultCatogaries(Integer userId) {
         repo.saveAll(List.of(
                 new Category(null, userId, "Salary", CategoryType.INCOME, false),
                 new Category(null, userId, "Food", CategoryType.EXPENSE, false),
@@ -36,71 +37,77 @@ public class CategoryService {
                 new Category(null, userId, "Healthcare", CategoryType.EXPENSE, false),
                 new Category(null, userId, "Utilities", CategoryType.EXPENSE, false)
         ));
-
     }
 
-    public List<GetCategoriesResponse> getAllCategories( Integer userId) {
+    public GetCategoriesResponse getAllCategories(Integer userId) {
+        List<Category> categories = repo.findByUserId(userId);
 
-
-
-        List<Category> categories= repo.findByUserId(userId);
-
-        List<GetCategoriesResponse> response = categories.stream()
-                .map(category -> new GetCategoriesResponse(
-                        category.getName(),
-                        category.getType(),
-                        category.isCustom()))
-                .toList();
-
-        return  response;
-    }
-
-    public String addCategory(NewCategoryRequest newCategoryRequestDTO) {
-
-        Category  newCategory = new Category();
-
-        Integer userId=1;
-
-        boolean exists = repo.existsByNameAndUserId( newCategoryRequestDTO.getName() , userId);
-        if (exists) {
-            return "Category already exists for this user";
+        if (categories.isEmpty()) {
+            throw new NotFoundException("No categories found for this user");
         }
 
-        newCategory.setUserId(1);
-        newCategory.setName(newCategoryRequestDTO.getName());
-        newCategory.setType(newCategoryRequestDTO.getType());
+        GetCategoriesResponse response = new GetCategoriesResponse();
+
+        List<NewCategoryResponse> categoryResponses ;
+
+        categoryResponses = categories.stream().map(category -> {
+            NewCategoryResponse newCategoryResponse = new NewCategoryResponse();
+            newCategoryResponse.setName(category.getName());
+            newCategoryResponse.setType(category.getType());
+            newCategoryResponse.setCustom(category.isCustom());
+            return newCategoryResponse;
+        }).toList();
+
+        response.setCategories(categoryResponses);
+
+        return response;
+    }
+
+    public NewCategoryResponse addCategory(Integer userId, NewCategoryRequest newCategoryRequest) {
+        boolean exists = repo.existsByNameAndUserId(newCategoryRequest.getName(), userId);
+        if (exists) {
+            throw new ConflictException("Category already exists for this user");
+        }
+
+        Category newCategory = new Category();
+        newCategory.setUserId(userId);
+        newCategory.setName(newCategoryRequest.getName());
+        newCategory.setType(newCategoryRequest.getType());
         newCategory.setCustom(true);
 
         repo.save(newCategory);
 
+        NewCategoryResponse response = new NewCategoryResponse();
 
-        return "Category added successfully";
+        response.setName(newCategory.getName());
+        response.setType(newCategory.getType());
+        response.setCustom(newCategory.isCustom());
+
+        return response;
     }
 
-    public String deleteCategory(String categoryName) {
-
-        Integer userId = 1;
-
-        Optional<Category> categoryOpt = repo.findByUserIdAndName( userId ,categoryName);
+    public DeleteCategoryResponse deleteCategory(Integer userId, String categoryName) {
+        Optional<Category> categoryOpt = repo.findByUserIdAndName(userId, categoryName);
 
         if (categoryOpt.isEmpty()) {
-            return "Category not found";
+            throw new NotFoundException("Category not found");
         }
 
         Category category = categoryOpt.get();
 
-        List<Transaction> transaction = transactionRepo.findByUserIdAndCategory(userId , categoryName);
-
-        if (!transaction.isEmpty()) {
-            return "Can not delete category, it has associated transactions";
+        if (!category.isCustom()) {
+            throw new ForbiddenException("Cannot delete default system categories");
         }
 
-        if (!category.isCustom()) {
-            return "Cannot delete default system categories";
+        List<Transaction> transactions = transactionRepo.findByUserIdAndCategory(userId, categoryName);
+        if (!transactions.isEmpty()) {
+            throw new ConflictException("Cannot delete category: it is referenced by existing transactions");
         }
 
         repo.delete(category);
-        return "Category deleted successfully";
 
+        DeleteCategoryResponse response = new DeleteCategoryResponse();
+        response.setMessage("Category deleted successfully");
+        return response;
     }
 }

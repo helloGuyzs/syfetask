@@ -3,6 +3,10 @@ package com.helloguyzs.syfetask.services;
 import com.helloguyzs.syfetask.dto.auth.LoginRequest;
 import com.helloguyzs.syfetask.dto.auth.LoginResponse;
 import com.helloguyzs.syfetask.dto.auth.RegisterRequest;
+import com.helloguyzs.syfetask.dto.auth.RegisterResponse;
+import com.helloguyzs.syfetask.exceptions.BadRequestException;
+import com.helloguyzs.syfetask.exceptions.ConflictException;
+import com.helloguyzs.syfetask.exceptions.UnauthorizedException;
 import com.helloguyzs.syfetask.models.Users;
 import com.helloguyzs.syfetask.repo.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,19 +18,17 @@ import java.util.Optional;
 @Service
 public class AuthService {
 
+    @Autowired
+    private CategoryService categoryService;
 
     @Autowired
-    CategoryService categoryService;
+    private UserRepo repo;
 
-    @Autowired
-    UserRepo repo;
-
-
-
-
-
-    public String register(RegisterRequest registerDto) {
-
+    public RegisterResponse register(RegisterRequest registerDto) {
+        // Check if user already exists
+        if (repo.findByUsername(registerDto.getUsername()).isPresent()) {
+            throw new ConflictException("User already exists with username: " + registerDto.getUsername());
+        }
 
         Users user = new Users();
         user.setUsername(registerDto.getUsername());
@@ -34,37 +36,35 @@ public class AuthService {
         user.setFullName(registerDto.getFullName());
         user.setPhone(registerDto.getPhoneNumber());
 
-        repo.save(user);
+        Users savedUser = repo.save(user);
 
-        categoryService.createDefaultCatogaries(1);
-        return "USer registered successfully";
+
+        categoryService.createDefaultCatogaries(savedUser.getId());
+
+        RegisterResponse response = new RegisterResponse();
+
+        response.setMessage("User registered successfully");
+        response.setUserId(savedUser.getId());
+
+        return response;
     }
 
+    public LoginResponse login(LoginRequest loginDto) {
+        Optional<Users> userOpt = repo.findByUsername(loginDto.getUsername());
 
-    public String login(LoginRequest loginDto ){
-
-        String username = loginDto.getUsername();
-        String password = loginDto.getPassword();
-
-       Optional< Users > userOpt = repo.findByUsername(username);
-
-        if (userOpt.isPresent()) {
-            Users user = userOpt.get();
-
-            if (user.getPassword().equals(password)){
-
-                 "Login Successfully";
-            }else {
-
-                return "Invalid Password";
-            }
-
-        } else {
-
-            return " User does not exist";
-
+        if (userOpt.isEmpty()) {
+            throw new UnauthorizedException("User does not exist");
         }
 
+        Users user = userOpt.get();
+        if (!user.getPassword().equals(loginDto.getPassword())) {
+            throw new UnauthorizedException("Invalid password");
+        }
+
+        LoginResponse response = new LoginResponse();
+        response.setMessage("Login successful");
+
+        return response;
     }
 
     public List<Users> getUser() {

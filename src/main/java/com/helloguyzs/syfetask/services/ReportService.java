@@ -1,9 +1,10 @@
 package com.helloguyzs.syfetask.services;
 
-
 import com.helloguyzs.syfetask.dto.report.MonthlyReport;
 import com.helloguyzs.syfetask.dto.report.YearlyReport;
 import com.helloguyzs.syfetask.enums.CategoryType;
+import com.helloguyzs.syfetask.exceptions.BadRequestException;
+import com.helloguyzs.syfetask.exceptions.NotFoundException;
 import com.helloguyzs.syfetask.models.Transaction;
 import com.helloguyzs.syfetask.repo.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,94 +19,76 @@ import java.util.Map;
 public class ReportService {
 
     @Autowired
-    TransactionRepo repo;
+    private TransactionRepo repo;
 
-    private Map< String , Double> totalIncome( List<Transaction> transactions, String type ){
-
-        Map<String , Double> response= new HashMap<>();
-
-        for (Transaction transaction : transactions){
-            if(transaction.getCategoryType() == CategoryType.valueOf(type)) {
-                response.put(transaction.getCategory(),
-                        response.getOrDefault(transaction.getCategory(),
-                        0.0) + transaction.getAmount());
+    private Map<String, Double> getTotalsByType(List<Transaction> transactions, CategoryType type) {
+        Map<String, Double> result = new HashMap<>();
+        for (Transaction txn : transactions) {
+            if (txn.getCategoryType() == type) {
+                result.put(txn.getCategory(),
+                        result.getOrDefault(txn.getCategory(), 0.0) + txn.getAmount());
             }
         }
-
-
-        return response;
-
-
-
+        return result;
     }
 
-    public MonthlyReport generateMonthlyReport(int year, int month) {
-        // Logic to generate monthly report
-        // This is a placeholder implementation
+    public MonthlyReport generateMonthlyReport(Integer userId, int year, int month) {
 
-        Integer userId = 1;
+        if (year < 1900 || year > 2100) {
+            throw new BadRequestException("Year must be between 1900 and 2100");
+        }
 
         LocalDate startDate = LocalDate.of(year, month, 1);
         LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
         List<Transaction> transactions = repo.findByUserIdAndDateBetween(userId, startDate, endDate);
-        Map<String, Double> incomeWithCategory = totalIncome(transactions, "INCOME");
-        Map<String, Double> expenseWithCategory = totalIncome(transactions, "EXPENSE");
+        if (transactions.isEmpty()) {
+            throw new NotFoundException("No transactions found for this month.");
+        }
 
-        double totalIncome = incomeWithCategory.values().stream().mapToDouble(Double::doubleValue).sum();
-        double totalExpenses = expenseWithCategory.values().stream().mapToDouble(Double::doubleValue).sum();
+        Map<String, Double> incomeMap = getTotalsByType(transactions, CategoryType.INCOME);
+        Map<String, Double> expenseMap = getTotalsByType(transactions, CategoryType.EXPENSE);
+
+        double totalIncome = incomeMap.values().stream().mapToDouble(Double::doubleValue).sum();
+        double totalExpenses = expenseMap.values().stream().mapToDouble(Double::doubleValue).sum();
         double netSavings = totalIncome - totalExpenses;
 
-        MonthlyReport monthlyReport = new MonthlyReport();
+        MonthlyReport report = new MonthlyReport();
+        report.setYear(year);
+        report.setMonth(month);
+        report.setTotalIncome(incomeMap);
+        report.setTotalExpenses(expenseMap);
+        report.setNetSavings(netSavings);
 
-        monthlyReport.setYear(year);
-        monthlyReport.setMonth(month);
-        monthlyReport.setTotalIncome(incomeWithCategory);
-        monthlyReport.setTotalExpenses(expenseWithCategory);
-        monthlyReport.setNetSavings(netSavings);
-
-//        Map<String, Object> report = new HashMap<>();
-//        report.put("month", month);
-//        report.put("year", year);
-//        report.put("totalIncome", incomeWithCategory);
-//        report.put("totalExpenses", expenseWithCategory);
-//        report.put("netSavings", netSavings);
-
-        return monthlyReport;
-
+        return report;
     }
 
+    public YearlyReport generateYearlyReport(Integer userId, int year) {
 
-    public YearlyReport generateYearlyReport(int year) {
-        Integer userId = 1;
-
+        if (year < 1900 || year > 2100) {
+            throw new BadRequestException("Year must be between 1900 and 2100");
+        }
         LocalDate startDate = LocalDate.of(year, 1, 1);
         LocalDate endDate = LocalDate.of(year, 12, 31);
 
         List<Transaction> transactions = repo.findByUserIdAndDateBetween(userId, startDate, endDate);
+        if (transactions.isEmpty()) {
+            throw new NotFoundException("No transactions found for this year.");
+        }
 
-        Map<String, Double> incomeWithCategory = totalIncome(transactions, "INCOME");
-        Map<String, Double> expenseWithCategory = totalIncome(transactions, "EXPENSE");
+        Map<String, Double> incomeMap = getTotalsByType(transactions, CategoryType.INCOME);
+        Map<String, Double> expenseMap = getTotalsByType(transactions, CategoryType.EXPENSE);
 
-        double totalIncome = incomeWithCategory.values().stream().mapToDouble(Double::doubleValue).sum();
-        double totalExpenses = expenseWithCategory.values().stream().mapToDouble(Double::doubleValue).sum();
+        double totalIncome = incomeMap.values().stream().mapToDouble(Double::doubleValue).sum();
+        double totalExpenses = expenseMap.values().stream().mapToDouble(Double::doubleValue).sum();
         double netSavings = totalIncome - totalExpenses;
 
+        YearlyReport report = new YearlyReport();
+        report.setYear(year);
+        report.setTotalIncome(incomeMap);
+        report.setTotalExpenses(expenseMap);
+        report.setNetSavings(netSavings);
 
-        YearlyReport yearlyReport = new YearlyReport();
-
-        yearlyReport.setYear(year);
-        yearlyReport.setTotalIncome(incomeWithCategory);
-        yearlyReport.setTotalExpenses(expenseWithCategory);
-        yearlyReport.setNetSavings(netSavings);
-
-//        Map<String, Object> report = new HashMap<>();
-//        report.put("year", year);
-//        report.put("totalIncome", incomeByCategory);
-//        report.put("totalExpenses", expenseByCategory);
-//        report.put("netSavings", netSavings);
-
-        return yearlyReport;
+        return report;
     }
-
 }

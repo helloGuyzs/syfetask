@@ -1,10 +1,7 @@
 package com.helloguyzs.syfetask.controller;
 
 
-import com.helloguyzs.syfetask.dto.goals.CreateGoalRequest;
-import com.helloguyzs.syfetask.dto.goals.CreateGoalResponse;
-import com.helloguyzs.syfetask.dto.goals.UpdateGoalRequest;
-import com.helloguyzs.syfetask.dto.goals.DeleteGoalResponse;
+import com.helloguyzs.syfetask.dto.goals.*;
 import com.helloguyzs.syfetask.services.GoalsService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api")
 public class GoalsController {
 
     @Autowired
@@ -21,29 +19,34 @@ public class GoalsController {
     @PostMapping("/goals")
     public CreateGoalResponse createGoal(@RequestBody @Valid CreateGoalRequest request) {
 
-        return goalsService.createGoal(request);
+        Integer userId = 1;
+        return goalsService.createGoal(userId, request);
     }
 
     @GetMapping("/goals")
-    public List<CreateGoalResponse> getGoalsByUserId() {
+    public GoalByUserIdResponse getGoalsByUserId() {
 
-        return goalsService.getGoalsByUserId();
+        Integer userId = 1;
+        return goalsService.getGoalsByUserId(userId);
     }
 
 
     @GetMapping("/goals/{id}")
     public CreateGoalResponse getGoalById(@PathVariable Integer id) {
-        return goalsService.getGoalById(id);
+        Integer userId = 1;
+        return goalsService.getGoalById( userId , id);
     }
 
     @PutMapping("/goals/{id}")
     public CreateGoalResponse updateGoal(@PathVariable Integer id, @RequestBody @Valid UpdateGoalRequest request) {
-        return goalsService.updateGoal(id, request);
+        Integer userId = 1;
+        return goalsService.updateGoal( userId, id, request);
     }
 
     @DeleteMapping("/goals/{id}")
     public DeleteGoalResponse deleteGoal(@PathVariable Integer id) {
-        return goalsService.deleteGoal(id);
+        Integer userId = 1;
+        return goalsService.deleteGoal(userId, id);
     }
 
 
