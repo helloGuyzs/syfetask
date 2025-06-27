@@ -8,19 +8,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class GetCategoriesResponse {
 
-
-    private String name ;
-
-    @Enumerated(EnumType.STRING)
-    private CategoryType type;
-
-    @JsonProperty("isCustom")
-    private boolean isCustom;
+    private List<NewCategoryResponse> categories ;
 
 }

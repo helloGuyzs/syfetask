@@ -1,11 +1,10 @@
 package com.helloguyzs.syfetask.services;
 
-
-import com.helloguyzs.syfetask.dto.goals.CreateGoalRequest;
-import com.helloguyzs.syfetask.dto.goals.CreateGoalResponse;
-import com.helloguyzs.syfetask.dto.goals.UpdateGoalRequest;
-import com.helloguyzs.syfetask.dto.goals.DeleteGoalResponse;
+import com.helloguyzs.syfetask.dto.goals.*;
 import com.helloguyzs.syfetask.enums.CategoryType;
+import com.helloguyzs.syfetask.exceptions.BadRequestException;
+import com.helloguyzs.syfetask.exceptions.ForbiddenException;
+import com.helloguyzs.syfetask.exceptions.NotFoundException;
 import com.helloguyzs.syfetask.models.Goal;
 import com.helloguyzs.syfetask.models.Transaction;
 import com.helloguyzs.syfetask.repo.GoalsRepo;
@@ -20,37 +19,26 @@ import java.util.Optional;
 @Service
 public class GoalsService {
 
-
-
     @Autowired
     GoalsRepo repo;
 
     @Autowired
     TransactionRepo transactionRepo;
 
-
-    private Double getTotalIncome(Goal goal , String type){
-
-         Integer userId = 1;
+    private Double getTotalIncome(Goal goal, String type) {
         List<Transaction> transactions = transactionRepo.findByUserIdAndDateBetween(
                 goal.getUserId(),
                 goal.getStartDate(),
                 goal.getTargetDate()
         );
 
-        System.out.println("Transactions: " + transactions);
-
-        double income = transactions.stream()
+        return transactions.stream()
                 .filter(txn -> txn.getCategoryType() == CategoryType.valueOf(type))
                 .mapToDouble(Transaction::getAmount)
                 .sum();
-
-
-        return income;
     }
 
     private CreateGoalResponse goalResponse(Goal goal) {
-
         CreateGoalResponse response = new CreateGoalResponse();
         response.setId(goal.getId());
         response.setGoalName(goal.getName());
@@ -61,16 +49,9 @@ public class GoalsService {
         Double income = getTotalIncome(goal, "INCOME");
         Double expense = getTotalIncome(goal, "EXPENSE");
 
-        double currentProgress = income - expense;
-        currentProgress = Math.max(currentProgress, 0);
+        double currentProgress = Math.max(income - expense, 0);
         double remainingAmount = Math.max(goal.getTargetAmount() - currentProgress, 0);
         double progressPercentage = (currentProgress / goal.getTargetAmount()) * 100;
-
-        System.out.println("Income" + income);
-        System.out.println("Expense: " + expense);
-        System.out.println("Current Progress: " + currentProgress);
-        System.out.println("Remaining Amount: " + remainingAmount);
-        System.out.println("Progress Percentage: " + progressPercentage);
 
         response.setCurrentProgress(currentProgress);
         response.setRemainingAmount(remainingAmount);
@@ -79,122 +60,85 @@ public class GoalsService {
         return response;
     }
 
-    public CreateGoalResponse createGoal(CreateGoalRequest requestDTO) {
+    public CreateGoalResponse createGoal(Integer userId, CreateGoalRequest requestDTO) {
 
-        Integer userId = 1;
         Goal goal = new Goal();
-
-
         goal.setUserId(userId);
         goal.setStartDate(LocalDate.now());
-
         goal.setName(requestDTO.getGoalName());
         goal.setTargetAmount(requestDTO.getTargetAmount());
         goal.setTargetDate(requestDTO.getTargetDate());
 
-        Double income = getTotalIncome(goal, "INCOME");
+        repo.save(goal);
+        return goalResponse(goal);
+    }
 
-        Double expense = getTotalIncome(goal, "EXPENSE");
+    public GoalByUserIdResponse getGoalsByUserId(Integer userId) {
+        List<Goal> goalList = repo.findByUserId(userId);
 
-        double currentProgress = income - expense;
-        currentProgress = Math.max(currentProgress, 0);
-        double remainingAmount = Math.max(goal.getTargetAmount() - currentProgress, 0);
-        double progressPercentage = (currentProgress / goal.getTargetAmount()) * 100;
+        if (goalList.isEmpty()) {
+            throw new NotFoundException("No goals found for this user");
+        }
 
 
+        GoalByUserIdResponse response = new GoalByUserIdResponse();
+
+        List<CreateGoalResponse> goalResponses = goalList.stream()
+                .map(this::goalResponse)
+                .toList();
+
+        response.setGoals(goalResponses);
+        return response;
+    }
+
+    public CreateGoalResponse getGoalById(Integer userId, Integer id) {
+        Goal goal = repo.findById(id).orElseThrow(() ->
+                new NotFoundException("Goal not found"));
+
+        if (!goal.getUserId().equals(userId)) {
+            throw new ForbiddenException("Access denied for this goal");
+        }
+
+        return goalResponse(goal);
+    }
+
+    public CreateGoalResponse updateGoal(Integer userId, Integer id, UpdateGoalRequest requestDTO) {
+        Goal goal = repo.findById(id).orElseThrow(() ->
+                new NotFoundException("Goal not found"));
+
+        if (!goal.getUserId().equals(userId)) {
+            throw new ForbiddenException("Access denied for this goal");
+        }
+//        if (requestDTO.getTargetAmount() != null && requestDTO.getTargetAmount() <= 0) {
+//            throw new BadRequestException("Target amount must be positive");
+//        }
 //
-//        goal.setCurrentProgress(currentProgress);
-//        goal.setProgressPercentage(progressPercentage);
-//        goal.setRemainingAmount(remainingAmount);
+//        if (requestDTO.getTargetDate() != null && !requestDTO.getTargetDate().isAfter(LocalDate.now())) {
+//            throw new BadRequestException("Target date must be a future date");
+//        }
 
-
-        repo.save(goal);
-
-        CreateGoalResponse response = goalResponse(goal);
-
-        return response;
-    }
-
-
-    public List<CreateGoalResponse> getGoalsByUserId() {
-        Integer userId = 1;
-
-
-        List<Goal> goal = repo.findByUserId(userId);
-
-        List<CreateGoalResponse> responseList = goal.stream().map(g -> {
-            CreateGoalResponse response = goalResponse(g);
-            return response;
-        }).toList();
-
-
-        return responseList;
-
-
-    }
-
-
-    public CreateGoalResponse getGoalById(Integer id) {
-
-        Optional<Goal> goalOpt = repo.findById(id);
-
-        if(!goalOpt.isPresent()) {
-            return null;
-        }
-
-        Goal goal = goalOpt.get();
-
-        CreateGoalResponse response = goalResponse(goal);
-
-        return response;
-
-    }
-
-    public CreateGoalResponse updateGoal(Integer id , UpdateGoalRequest requestDTO) {
-
-        Optional<Goal> goalOpt = repo.findById(id);
-
-        if(!goalOpt.isPresent()) {
-            return null;
-        }
-
-        Goal goal = goalOpt.get();
-
-        if (requestDTO.getTargetAmount() != null) {
+        if (requestDTO.getTargetAmount() != null)
             goal.setTargetAmount(requestDTO.getTargetAmount());
-        }
 
-        if (requestDTO.getTargetDate() != null) {
+        if (requestDTO.getTargetDate() != null)
             goal.setTargetDate(requestDTO.getTargetDate());
-        }
 
         repo.save(goal);
-
-        CreateGoalResponse response = goalResponse(goal);
-
-        return response;
+        return goalResponse(goal);
     }
 
-    public DeleteGoalResponse deleteGoal(Integer id) {
+    public DeleteGoalResponse deleteGoal(Integer userId, Integer id) {
+        Goal goal = repo.findById(id).orElseThrow(() ->
+                new NotFoundException("Goal not found"));
 
-        Optional<Goal> goalOpt = repo.findById(id);
-
-        if(!goalOpt.isPresent()) {
-            return null;
+        if (!goal.getUserId().equals(userId)) {
+            throw new ForbiddenException("Access denied for this goal");
         }
-
-        Goal goal = goalOpt.get();
 
         repo.delete(goal);
 
         DeleteGoalResponse response = new DeleteGoalResponse();
-
         response.setMessage("Goal deleted successfully");
-
         return response;
-
     }
-
-
-
 }

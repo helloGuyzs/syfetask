@@ -1,8 +1,7 @@
 package com.helloguyzs.syfetask.controller;
 
 
-import com.helloguyzs.syfetask.dto.transaction.CreateTransactionRequest;
-import com.helloguyzs.syfetask.dto.transaction.UpdateTransactionRequest;
+import com.helloguyzs.syfetask.dto.transaction.*;
 import com.helloguyzs.syfetask.enums.CategoryType;
 import com.helloguyzs.syfetask.models.Transaction;
 import com.helloguyzs.syfetask.services.TransactionService;
@@ -15,39 +14,45 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api")
 public class TransactionController {
 
     @Autowired
     TransactionService transactionService;
 
     @GetMapping("/transactions")
-    public List<Transaction> getTransactions(
+    public GetTransactionReponse getTransactions(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) CategoryType type
     ) {
 
-        return transactionService.getAllTransaction(startDate, endDate, category, type);
+        Integer userId = 1 ;
+
+        return transactionService.getAllTransaction( userId, startDate, endDate, category, type);
     }
 
 
 
 
     @PostMapping("/transactions")
-    public String addTransactions( @RequestBody @Valid CreateTransactionRequest request){
-        return transactionService.addTransaction(request);
+    public CreateTransactionResponse addTransactions(@RequestBody @Valid CreateTransactionRequest request){
+        Integer userId = 1 ;
+        return transactionService.addTransaction(userId , request);
     }
 
     @PutMapping("/transactions/{id}")
-    public String updateTransaction(@PathVariable int id, @RequestBody @Valid UpdateTransactionRequest request){
-
-        return transactionService.updateTransaction(id , request) ;
+    public CreateTransactionResponse updateTransaction(@PathVariable int id, @RequestBody @Valid UpdateTransactionRequest request){
+        Integer userId = 1 ;
+        return transactionService.updateTransaction( userId, id , request) ;
     }
 
     @DeleteMapping("/transactions/{id}")
-    public String deleteTransaction(@PathVariable Integer id){
+    public DeleteTransactionResponse deleteTransaction(@PathVariable Integer id){
 
-        return transactionService.deleteTransaction(id) ;
+        Integer userId = 1 ;
+
+        return transactionService.deleteTransaction( userId , id) ;
     }
 }

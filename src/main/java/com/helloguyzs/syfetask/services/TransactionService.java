@@ -1,9 +1,9 @@
 package com.helloguyzs.syfetask.services;
 
-
-import com.helloguyzs.syfetask.dto.transaction.CreateTransactionRequest;
-import com.helloguyzs.syfetask.dto.transaction.UpdateTransactionRequest;
+import com.helloguyzs.syfetask.dto.transaction.*;
 import com.helloguyzs.syfetask.enums.CategoryType;
+import com.helloguyzs.syfetask.exceptions.BadRequestException;
+import com.helloguyzs.syfetask.exceptions.NotFoundException;
 import com.helloguyzs.syfetask.models.Category;
 import com.helloguyzs.syfetask.models.Transaction;
 import com.helloguyzs.syfetask.repo.CategoryRepo;
@@ -25,49 +25,56 @@ public class TransactionService {
     @Autowired
     TransactionRepo repo;
 
+    private CreateTransactionResponse getResponse(Transaction transaction) {
+        CreateTransactionResponse response = new CreateTransactionResponse();
+        response.setId(transaction.getId());
+        response.setAmount(transaction.getAmount());
+        response.setDate(transaction.getDate());
+        response.setCategory(transaction.getCategory());
+        response.setDescription(transaction.getDescription());
+        response.setType(transaction.getCategoryType());
+        return response;
+    }
 
-    public List<Transaction> getAllTransaction(
+    public GetTransactionReponse getAllTransaction(
+            Integer userId,
             LocalDate startDate,
             LocalDate endDate,
             String categoryName,
             CategoryType type
-
     ) {
-
-        int userId = 1;
-
-        List<Transaction> transactions = repo.findByUserId(userId);
-
-        return transactions.stream()
+        List<Transaction> transactions =  repo.findByUserId(userId).stream()
                 .filter(txn -> startDate == null || !txn.getDate().isBefore(startDate))
                 .filter(txn -> endDate == null || !txn.getDate().isAfter(endDate))
                 .filter(txn -> categoryName == null || txn.getCategory().equalsIgnoreCase(categoryName))
                 .filter(txn -> type == null || txn.getCategoryType() == type)
                 .sorted(Comparator.comparing(Transaction::getDate).reversed())
                 .toList();
-    }
 
-    public String addTransaction(CreateTransactionRequest requestDTO) {
 
-        // need to make the check of category
 
-        int userId = 1;
-
-        List<Category> categories = categoryRepo.findByUserId(userId);
-
-        if (categories.stream().noneMatch(category -> category.getName().equals(requestDTO.getCategory()))) {
-            return "Category does not exist";
+        if (transactions.isEmpty()) {
+            throw new NotFoundException("No transactions found for this user");
         }
 
-        Optional<Category>  categoryOpt = categoryRepo.findByUserIdAndName( userId, requestDTO.getCategory());
+        GetTransactionReponse response = new GetTransactionReponse();
+        response.setTransactions(transactions.stream()
+                .map(this::getResponse)
+                .toList());
+
+        return response ;
+
+    }
+
+    public CreateTransactionResponse addTransaction(Integer userId, CreateTransactionRequest requestDTO) {
+        Optional<Category> categoryOpt = categoryRepo.findByUserIdAndName(userId, requestDTO.getCategory());
         if (categoryOpt.isEmpty()) {
-            return "Category does not exist";
+            throw new BadRequestException("Category does not exist");
         }
 
         Category category = categoryOpt.get();
+
         Transaction transaction = new Transaction();
-
-
         transaction.setUserId(userId);
         transaction.setAmount(requestDTO.getAmount());
         transaction.setDate(requestDTO.getDate());
@@ -77,74 +84,53 @@ public class TransactionService {
 
         repo.save(transaction);
 
+        CreateTransactionResponse response = getResponse(transaction);
 
-        return "Transaction Added successfully";
+        return response ;
     }
 
+    public CreateTransactionResponse updateTransaction(Integer userId, int id, UpdateTransactionRequest requestDTO) {
+        Transaction transaction = repo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Transaction not found"));
 
-    public String updateTransaction(int updateTransactoinID, UpdateTransactionRequest updateTransactionDTO) {
-
-        int userId = 1;
-
-        Optional<Transaction> optTran = repo.findById(updateTransactoinID);
-
-        if (optTran.isPresent()) {
-
-            Transaction transaction = optTran.get();
-
-            if (updateTransactionDTO.getAmount() != null) {
-
-                if (updateTransactionDTO.getAmount() > 0) {
-                    transaction.setAmount(updateTransactionDTO.getAmount());
-                } else {
-                    return "Amount should be greater than 0";
-                }
-
-            }
-
-            if (updateTransactionDTO.getCategory() != null) {
-
-
-                List<Category> categories =categoryRepo.findByUserId(userId);
-
-                if (categories.stream()
-                        .anyMatch(category -> category.getName()
-                                .equals(updateTransactionDTO.getCategory()))) {
-
-                    Optional<Category>  newCategory = categoryRepo.findByUserIdAndName( userId, updateTransactionDTO.getCategory());
-                    Category category = newCategory.get();
-                    transaction.setCategoryType(category.getType());
-                    transaction.setCategory(updateTransactionDTO.getCategory());
-
-                } else {
-                    return "Category does not exist";
-                }
-            }
-
-
-            if (updateTransactionDTO.getDescription() != null) {
-                transaction.setDescription(updateTransactionDTO.getDescription());
-            }
-
-            repo.save(transaction);
-
-            return "Transaction Updated Succefully";
-
+        if (!transaction.getUserId().equals(userId)) {
+            throw new BadRequestException("Unauthorized access to transaction");
         }
 
-        return "Transaction not found";
-    }
-
-    public String deleteTransaction (Integer TransactionID){
-
-        Optional<Transaction> transaction = repo.findById(TransactionID);
-
-        if (transaction.isEmpty()) {
-            return "Transaction not found";
+        if (requestDTO.getAmount() != null) {
+            transaction.setAmount(requestDTO.getAmount());
         }
 
-        repo.deleteById(TransactionID);
-        return "Transaction deleted successfully";
+        if (requestDTO.getCategory() != null) {
+            Category category = categoryRepo.findByUserIdAndName(userId, requestDTO.getCategory())
+                    .orElseThrow(() -> new BadRequestException("Category does not exist"));
+
+            transaction.setCategoryType(category.getType());
+            transaction.setCategory(requestDTO.getCategory());
+        }
+
+        if (requestDTO.getDescription() != null) {
+            transaction.setDescription(requestDTO.getDescription());
+        }
+
+        repo.save(transaction);
+
+        CreateTransactionResponse response = getResponse(transaction);
+        return response;
     }
 
+    public DeleteTransactionResponse deleteTransaction(Integer userId, Integer id) {
+        Transaction transaction = repo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Transaction not found"));
+
+        if (!transaction.getUserId().equals(userId)) {
+            throw new BadRequestException("Unauthorized access to transaction");
+        }
+
+        repo.delete(transaction);
+
+        DeleteTransactionResponse response = new DeleteTransactionResponse();
+        response.setMessage("Transaction deleted successfully");
+        return response;
+    }
 }

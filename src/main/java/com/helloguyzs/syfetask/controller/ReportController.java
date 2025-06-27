@@ -7,11 +7,13 @@ import com.helloguyzs.syfetask.services.ReportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.awt.*;
 
 @RestController
+@RequestMapping("/api")
 public class ReportController {
 
     @Autowired
@@ -19,15 +21,16 @@ public class ReportController {
 
     @GetMapping("/reports/monthly/{year}/{month}")
     public MonthlyReport generateMonthlyReport(@PathVariable int year, @PathVariable int month) {
-
-        return reportService.generateMonthlyReport( year, month);
+        Integer userId = 1;
+        return reportService.generateMonthlyReport(  userId, year, month);
     }
 
 
     @GetMapping("/reports/yearly/{year}")
     public YearlyReport generateYearlyReport(@PathVariable int year) {
 
-        return reportService.generateYearlyReport( year);
+        Integer userId = 1;
+        return reportService.generateYearlyReport( userId , year);
     }
 
 }
