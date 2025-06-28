@@ -158,6 +158,19 @@ _See Swagger UI for full request/response details and error codes._
   ```
 
 
+## Screenshots
+
+
+1. ![Screenshot 1](https://github.com/helloGuyzs/syfetask/blob/main/Screenshot%202025-06-28%20203657.png)
+2. ![Screenshot 2](https://github.com/helloGuyzs/syfetask/blob/main/Screenshot%202025-06-28%20203718.png)
+3. ![Screenshot 3](https://github.com/helloGuyzs/syfetask/blob/main/Screenshot%202025-06-28%20203737.png)
+4. ![Screenshot 4](https://github.com/helloGuyzs/syfetask/blob/main/Screenshot%202025-06-28%20203753.png)
+
+### Test Case Completion
+
+![Test Case Completed](https://github.com/helloGuyzs/syfetask/blob/main/Test_case_completed.png)  
+
+
 ## Design Decisions
 
 - **Layered Architecture:** Controller → Service → Repository.
