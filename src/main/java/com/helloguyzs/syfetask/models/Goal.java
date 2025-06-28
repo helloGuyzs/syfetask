@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -22,11 +23,14 @@ public class Goal {
     private Integer id;
 
     @Column(nullable = false)
+    private Integer userId;
+
+    @Column(nullable = false)
     private String name;
 
     @Column(nullable = false)
     @Min(1)
-    private Double  targetAmount;
+    private BigDecimal targetAmount;
 
     @Column(nullable = false)
     private LocalDate startDate;
@@ -34,17 +38,4 @@ public class Goal {
     @Future(message = "Target date must be a future date")
     @Column(nullable = false)
     private LocalDate targetDate;
-
-    @Column(nullable = false)
-    private Integer userId;
-
-//    @Column(nullable = false)
-//    private Double currentProgress ;
-//
-//    @Column(nullable = false)
-//    private Double progressPercentage ;
-//
-//    @Column(nullable = false)
-//    private Double remainingAmount ;
-
 }

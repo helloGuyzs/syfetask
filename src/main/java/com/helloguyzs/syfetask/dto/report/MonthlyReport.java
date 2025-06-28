@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @Data
@@ -13,8 +14,8 @@ public class MonthlyReport {
 
     private int year;
     private int month;
-    private Map<String, Double> totalIncome;
-    private Map<String, Double> totalExpenses;
-    private double netSavings;
+    private Map<String, BigDecimal> totalIncome;
+    private Map<String, BigDecimal> totalExpenses;
+    private BigDecimal netSavings;
 
 }

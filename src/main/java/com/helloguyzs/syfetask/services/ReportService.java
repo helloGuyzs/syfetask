@@ -4,12 +4,13 @@ import com.helloguyzs.syfetask.dto.report.MonthlyReport;
 import com.helloguyzs.syfetask.dto.report.YearlyReport;
 import com.helloguyzs.syfetask.enums.CategoryType;
 import com.helloguyzs.syfetask.exceptions.BadRequestException;
-import com.helloguyzs.syfetask.exceptions.NotFoundException;
 import com.helloguyzs.syfetask.models.Transaction;
 import com.helloguyzs.syfetask.repo.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -21,12 +22,13 @@ public class ReportService {
     @Autowired
     private TransactionRepo repo;
 
-    private Map<String, Double> getTotalsByType(List<Transaction> transactions, CategoryType type) {
-        Map<String, Double> result = new HashMap<>();
+    private Map<String, BigDecimal> getTotalsByType(List<Transaction> transactions, CategoryType type) {
+        Map<String, BigDecimal> result = new HashMap<>();
         for (Transaction txn : transactions) {
             if (txn.getCategoryType() == type) {
+                BigDecimal currentAmount = result.getOrDefault(txn.getCategory(), BigDecimal.ZERO);
                 result.put(txn.getCategory(),
-                        result.getOrDefault(txn.getCategory(), 0.0) + txn.getAmount());
+                        currentAmount.add(txn.getAmount()).setScale(2, RoundingMode.HALF_UP));
             }
         }
         return result;
@@ -42,16 +44,30 @@ public class ReportService {
         LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
         List<Transaction> transactions = repo.findByUserIdAndDateBetween(userId, startDate, endDate);
-        if (transactions.isEmpty()) {
-            throw new NotFoundException("No transactions found for this month.");
+
+        Map<String, BigDecimal> incomeMap = new HashMap<>();
+        Map<String, BigDecimal> expenseMap = new HashMap<>();
+
+        if (!transactions.isEmpty()) {
+            incomeMap = getTotalsByType(transactions, CategoryType.INCOME);
+            expenseMap = getTotalsByType(transactions, CategoryType.EXPENSE);
         }
 
-        Map<String, Double> incomeMap = getTotalsByType(transactions, CategoryType.INCOME);
-        Map<String, Double> expenseMap = getTotalsByType(transactions, CategoryType.EXPENSE);
+        BigDecimal totalIncome = incomeMap.values().stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalExpenses = expenseMap.values().stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
 
-        double totalIncome = incomeMap.values().stream().mapToDouble(Double::doubleValue).sum();
-        double totalExpenses = expenseMap.values().stream().mapToDouble(Double::doubleValue).sum();
-        double netSavings = totalIncome - totalExpenses;
+        BigDecimal netSavings = totalIncome.subtract(totalExpenses);
+        // Format netSavings - if zero, don't show decimals
+        if (netSavings.compareTo(BigDecimal.ZERO) == 0) {
+            netSavings = BigDecimal.ZERO;
+        } else {
+            netSavings = netSavings.setScale(2, RoundingMode.HALF_UP);
+        }
+
 
         MonthlyReport report = new MonthlyReport();
         report.setYear(year);
@@ -68,20 +84,35 @@ public class ReportService {
         if (year < 1900 || year > 2100) {
             throw new BadRequestException("Year must be between 1900 and 2100");
         }
+
         LocalDate startDate = LocalDate.of(year, 1, 1);
         LocalDate endDate = LocalDate.of(year, 12, 31);
 
         List<Transaction> transactions = repo.findByUserIdAndDateBetween(userId, startDate, endDate);
-        if (transactions.isEmpty()) {
-            throw new NotFoundException("No transactions found for this year.");
+
+        Map<String, BigDecimal> incomeMap = new HashMap<>();
+        Map<String, BigDecimal> expenseMap = new HashMap<>();
+
+        if (!transactions.isEmpty()) {
+            incomeMap = getTotalsByType(transactions, CategoryType.INCOME);
+            expenseMap = getTotalsByType(transactions, CategoryType.EXPENSE);
         }
 
-        Map<String, Double> incomeMap = getTotalsByType(transactions, CategoryType.INCOME);
-        Map<String, Double> expenseMap = getTotalsByType(transactions, CategoryType.EXPENSE);
+        BigDecimal totalIncome = incomeMap.values().stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalExpenses = expenseMap.values().stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
 
-        double totalIncome = incomeMap.values().stream().mapToDouble(Double::doubleValue).sum();
-        double totalExpenses = expenseMap.values().stream().mapToDouble(Double::doubleValue).sum();
-        double netSavings = totalIncome - totalExpenses;
+
+        BigDecimal netSavings = totalIncome.subtract(totalExpenses);
+
+        if (netSavings.compareTo(BigDecimal.ZERO) == 0) {
+            netSavings = BigDecimal.ZERO;
+        } else {
+            netSavings = netSavings.setScale(2, RoundingMode.HALF_UP);
+        }
 
         YearlyReport report = new YearlyReport();
         report.setYear(year);
