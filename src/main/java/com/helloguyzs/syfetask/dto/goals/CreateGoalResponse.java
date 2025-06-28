@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @AllArgsConstructor
@@ -15,12 +16,12 @@ public class CreateGoalResponse {
 
         private Integer id;
         private String goalName;
-        private Double  targetAmount;
-        private LocalDate targetDate;
+        private BigDecimal targetAmount;
         private LocalDate startDate;
-        private Double  currentProgress;
-        private Double progressPercentage;
-        private Double  remainingAmount;
+        private LocalDate targetDate;
+        private BigDecimal currentProgress;
+        private BigDecimal remainingAmount;
+        private BigDecimal progressPercentage;
 
 
 }

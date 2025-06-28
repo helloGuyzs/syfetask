@@ -12,30 +12,36 @@ import com.helloguyzs.syfetask.repo.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class GoalsService {
+    @Autowired
+    private GoalsRepo repo;
 
     @Autowired
-    GoalsRepo repo;
+    private TransactionRepo transactionRepo;
 
-    @Autowired
-    TransactionRepo transactionRepo;
+    private BigDecimal getTotalIncome(Goal goal, String type) {
 
-    private Double getTotalIncome(Goal goal, String type) {
+        LocalDate endDate = LocalDate.now();
+
+        LocalDate startDate = goal.getStartDate();
+
         List<Transaction> transactions = transactionRepo.findByUserIdAndDateBetween(
                 goal.getUserId(),
-                goal.getStartDate(),
-                goal.getTargetDate()
+                startDate,
+                endDate
         );
 
         return transactions.stream()
                 .filter(txn -> txn.getCategoryType() == CategoryType.valueOf(type))
-                .mapToDouble(Transaction::getAmount)
-                .sum();
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
     private CreateGoalResponse goalResponse(Goal goal) {
@@ -46,12 +52,41 @@ public class GoalsService {
         response.setTargetDate(goal.getTargetDate());
         response.setTargetAmount(goal.getTargetAmount());
 
-        Double income = getTotalIncome(goal, "INCOME");
-        Double expense = getTotalIncome(goal, "EXPENSE");
+        BigDecimal income = getTotalIncome(goal, "INCOME");
+        BigDecimal expense = getTotalIncome(goal, "EXPENSE");
 
-        double currentProgress = Math.max(income - expense, 0);
-        double remainingAmount = Math.max(goal.getTargetAmount() - currentProgress, 0);
-        double progressPercentage = (currentProgress / goal.getTargetAmount()) * 100;
+        BigDecimal currentProgress = income.subtract(expense).max(BigDecimal.ZERO);
+        if (currentProgress.compareTo(BigDecimal.ZERO) > 0) {
+            currentProgress = currentProgress.setScale(2, RoundingMode.HALF_UP);
+        } else {
+            currentProgress = BigDecimal.ZERO;
+        }
+
+        BigDecimal remainingAmount = goal.getTargetAmount().subtract(currentProgress);
+        if (remainingAmount.compareTo(BigDecimal.ZERO) > 0) {
+            remainingAmount = remainingAmount.setScale(2, RoundingMode.HALF_UP);
+        }
+
+
+        // Calculate percentage
+        BigDecimal progressPercentage;
+        if (goal.getTargetAmount().compareTo(BigDecimal.ZERO) > 0) {
+            // Calculate raw percentage
+            progressPercentage = currentProgress.multiply(new BigDecimal("100"))
+                    .divide(goal.getTargetAmount(), 2, RoundingMode.HALF_UP);
+
+            if (progressPercentage.compareTo(BigDecimal.ZERO) == 0) {
+                progressPercentage = new BigDecimal("0.0");
+            } else {
+                // Convert to string and remove trailing zeros if present
+                String percentageStr = progressPercentage.toString();
+                if (percentageStr.endsWith("0")) {
+                    progressPercentage = new BigDecimal(percentageStr.substring(0, percentageStr.length() - 1));
+                }
+            }
+        } else {
+            progressPercentage = new BigDecimal("0.0");
+        }
 
         response.setCurrentProgress(currentProgress);
         response.setRemainingAmount(remainingAmount);
@@ -61,13 +96,23 @@ public class GoalsService {
     }
 
     public CreateGoalResponse createGoal(Integer userId, CreateGoalRequest requestDTO) {
-
         Goal goal = new Goal();
         goal.setUserId(userId);
-        goal.setStartDate(LocalDate.now());
         goal.setName(requestDTO.getGoalName());
-        goal.setTargetAmount(requestDTO.getTargetAmount());
+        goal.setTargetAmount(requestDTO.getTargetAmount().setScale(2, RoundingMode.HALF_UP));
         goal.setTargetDate(requestDTO.getTargetDate());
+
+
+        if (requestDTO.getStartDate() != null) {
+            goal.setStartDate(requestDTO.getStartDate());
+        } else {
+
+            goal.setStartDate(LocalDate.now());
+        }
+
+        if (goal.getTargetDate().isBefore(goal.getStartDate())) {
+            throw new BadRequestException("Target date cannot be before start date");
+        }
 
         repo.save(goal);
         return goalResponse(goal);
@@ -76,13 +121,7 @@ public class GoalsService {
     public GoalByUserIdResponse getGoalsByUserId(Integer userId) {
         List<Goal> goalList = repo.findByUserId(userId);
 
-        if (goalList.isEmpty()) {
-            throw new NotFoundException("No goals found for this user");
-        }
-
-
         GoalByUserIdResponse response = new GoalByUserIdResponse();
-
         List<CreateGoalResponse> goalResponses = goalList.stream()
                 .map(this::goalResponse)
                 .toList();
@@ -109,19 +148,18 @@ public class GoalsService {
         if (!goal.getUserId().equals(userId)) {
             throw new ForbiddenException("Access denied for this goal");
         }
-//        if (requestDTO.getTargetAmount() != null && requestDTO.getTargetAmount() <= 0) {
-//            throw new BadRequestException("Target amount must be positive");
-//        }
-//
-//        if (requestDTO.getTargetDate() != null && !requestDTO.getTargetDate().isAfter(LocalDate.now())) {
-//            throw new BadRequestException("Target date must be a future date");
-//        }
 
-        if (requestDTO.getTargetAmount() != null)
-            goal.setTargetAmount(requestDTO.getTargetAmount());
+        if (requestDTO.getTargetAmount() != null) {
+            goal.setTargetAmount(requestDTO.getTargetAmount().setScale(2, RoundingMode.HALF_UP));
+        }
 
-        if (requestDTO.getTargetDate() != null)
-            goal.setTargetDate(requestDTO.getTargetDate());
+        if (requestDTO.getTargetDate() != null) {
+            LocalDate newTargetDate = requestDTO.getTargetDate();
+            if (newTargetDate.isBefore(goal.getStartDate())) {
+                throw new IllegalArgumentException("Target date cannot be before start date");
+            }
+            goal.setTargetDate(newTargetDate);
+        }
 
         repo.save(goal);
         return goalResponse(goal);

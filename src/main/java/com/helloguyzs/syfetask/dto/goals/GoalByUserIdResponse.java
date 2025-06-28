@@ -11,6 +11,5 @@ import java.util.List;
 @NoArgsConstructor
 @Data
 public class GoalByUserIdResponse {
-
     private List<CreateGoalResponse> goals;
 }
