@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.aspectj.weaver.ast.Not;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 
@@ -29,10 +30,10 @@ public class Transaction {
 
     @Column(nullable = false)
     @Min(1)
-    private Double  amount;
+    private BigDecimal amount;
 
     @Column( nullable = false)
-//    @PastOrPresent(message = "Date cannot be in the future")
+    @PastOrPresent(message = "Date cannot be in the future")
     private LocalDate date;
 
     @Column( nullable = false)

@@ -11,6 +11,8 @@ import com.helloguyzs.syfetask.repo.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
@@ -28,7 +30,7 @@ public class TransactionService {
     private CreateTransactionResponse getResponse(Transaction transaction) {
         CreateTransactionResponse response = new CreateTransactionResponse();
         response.setId(transaction.getId());
-        response.setAmount(transaction.getAmount());
+        response.setAmount(transaction.getAmount().setScale(2, RoundingMode.HALF_UP));
         response.setDate(transaction.getDate());
         response.setCategory(transaction.getCategory());
         response.setDescription(transaction.getDescription());
@@ -51,12 +53,6 @@ public class TransactionService {
                 .sorted(Comparator.comparing(Transaction::getDate).reversed())
                 .toList();
 
-
-
-        if (transactions.isEmpty()) {
-            throw new NotFoundException("No transactions found for this user");
-        }
-
         GetTransactionReponse response = new GetTransactionReponse();
         response.setTransactions(transactions.stream()
                 .map(this::getResponse)
@@ -76,7 +72,7 @@ public class TransactionService {
 
         Transaction transaction = new Transaction();
         transaction.setUserId(userId);
-        transaction.setAmount(requestDTO.getAmount());
+        transaction.setAmount(requestDTO.getAmount().setScale(2, RoundingMode.HALF_UP));
         transaction.setDate(requestDTO.getDate());
         transaction.setCategory(requestDTO.getCategory());
         transaction.setDescription(requestDTO.getDescription());
@@ -98,7 +94,7 @@ public class TransactionService {
         }
 
         if (requestDTO.getAmount() != null) {
-            transaction.setAmount(requestDTO.getAmount());
+            transaction.setAmount(requestDTO.getAmount().setScale(2, RoundingMode.HALF_UP));
         }
 
         if (requestDTO.getCategory() != null) {
