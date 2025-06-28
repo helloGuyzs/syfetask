@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk-focal AS builder
+FROM eclipse-temurin:21-jdk-focal AS builder
 
 WORKDIR /app
 COPY .mvn/ .mvn
@@ -10,7 +10,7 @@ RUN sed -i 's/\r$//' mvnw && \
     chmod +x mvnw && \
     ./mvnw clean package -DskipTests
 
-FROM eclipse-temurin:17-jdk-focal
+FROM eclipse-temurin:21-jdk-focal
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 EXPOSE 8080
